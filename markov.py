@@ -119,6 +119,11 @@ if args.runs < 30:
 
 file = args.out
 for chance in args.chances:
-    file.write(f"#####P={chance}#####\n")
+    file.write(f"P={chance}\n")
     for run in range(1, args.runs+1):
-        predict_match(chance, file, run)
+        winner = predict_match(chance, file, run)
+        if winner:
+            winner = "P"
+        else:
+            winner = "Q"
+        file.write(f"{winner} wins\n")
