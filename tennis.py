@@ -42,9 +42,12 @@ args = parser.parse_args()
 # Returns 0 when P wins, 1 otherwise
 
 
+game_hist = list[list[int]]
+
+
 def predict_game(
     P_chance: float, file: TextIO, game_state: list[list[int], list[int], int]
-) -> tuple[list[int], int]:
+) -> tuple[game_hist, int]:
     # P, Q
     points = [0, 0]
     games_played = 0
@@ -63,12 +66,13 @@ def predict_game(
     return (hist, winner)
 
 
+set_hist = tuple[tuple[list[int], list[game_hist]]]
 def predict_set(
     P_chance: float,
     file: TextIO,
     game_state: list[list[int], list[int], int],
     tie_break=False,
-) -> tuple[tuple[list[int], list[list[int]]], int]:
+) -> tuple[set_hist, int]:
     # P, Q
     points = [0, 0]
     game_count = 0
@@ -99,22 +103,21 @@ def predict_set(
     return (hist, winner)
 
 
+match_hist = tuple[tuple[list[int], list[set_hist]]]
 # Return True if P has won the match, False otherwise
-def predict_match(
-    chances: float, file: TextIO, run: int
-) -> tuple[tuple[list[int], tuple[list[int], list[list[int]]]], bool]:
+def predict_match(P_chance: float, file: TextIO, run: int) -> tuple[match_hist, bool]:
     # P, Q
     points = [0, 0]
     hist = []
     hist.append((points.copy(), []))
     for i in range(0, 2):
-        (set_hist, winner) = predict_set(chances, file, [[], points, [run]])
+        (set_hist, winner) = predict_set(P_chance, file, [[], points, [run]])
         hist.append((points.copy(), set_hist.copy()))
         points[winner] += 1
         # print(f"Match winner: {['P', 'Q'][winner]}")
     if points[0] == 1:
         # print("Tied matches. Playing roundoff")
-        (set_hist, winner) = predict_set(chances, file, [[], points, [run]])
+        (set_hist, winner) = predict_set(P_chance, file, [[], points, [run]])
         hist.append((points.copy(), set_hist.copy()))
         points[winner] += 1
         # print(f"Match winner: {['P', 'Q'][winner]}")
@@ -132,52 +135,80 @@ def typ(something, depth=0):
     if depth > 63:
         return "..."
     if type(something) == tuple:
-        return "(" + ", ".join(typ(ding, depth+1) for ding in something) + ")"
+        return "(" + ", ".join(typ(ding, depth + 1) for ding in something) + ")"
     elif type(something) == list:
-        return "[" + (typ(something[0], depth+1) if something else '(empty)') + "]"
+        return "[" + (typ(something[0], depth + 1) if something else "(empty)") + "]"
     else:
         return str(type(something))
 
 
 file = args.out
-file.write(f"game_points_P,game_points_Q,set_points_P,set_points_Q,match_points_P,match_points_Q,run,P_chance\n")
+# file.write(
+#     f"points_P,points_Q,games_P,games_Q,sets_P,sets_Q,run,P_chance\n"
+# )
+# for chance in args.chances:
+#     for run in range(1, args.runs + 1):
+#         (hist, winner) = predict_match(chance, file, run)
+#         if winner:
+#             winner = "P"
+#         else:
+#             winner = "Q"
+#         # print(f"{(hist, winner)}")
+#         last_print = {}
+#         last_print.clear()
+#         last_print.setdefault("game_pointsP", -1)
+#         last_print.setdefault("game_pointsQ", -1)
+#         last_print.setdefault("set_pointsP", -1)
+#         last_print.setdefault("set_pointsQ", -1)
+#         last_print.setdefault("match_pointsP", -1)
+#         last_print.setdefault("match_pointsQ", -1)
+#         for (match_points, set_hist) in hist:
+#             for (set_points, game_hist) in set_hist:
+#                 for game_points in game_hist:
+#                     if game_points[0] == last_print["game_pointsP"]:
+#                         game_points[0] = ""
+#                     if game_points[1] == last_print["game_pointsQ"]:
+#                         game_points[1] = ""
+#                     if set_points[0] == last_print["set_pointsP"]:
+#                         set_points[0] = ""
+#                     if set_points[1] == last_print["set_pointsQ"]:
+#                         set_points[1] = ""
+#                     if match_points[0] == last_print["match_pointsP"]:
+#                         match_points[0] = ""
+#                     if match_points[1] == last_print["match_pointsQ"]:
+#                         match_points[1] = ""
+#                     fstring = f"{game_points[0]},{game_points[1]},{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
+#                     # print(fstring, end="")
+#                     last_print["match_pointsP"] = match_points[0]
+#                     last_print["match_pointsQ"] = match_points[1]
+#                     last_print["set_pointsP"] = set_points[0]
+#                     last_print["set_pointsQ"] = set_points[1]
+#                     last_print["game_pointsP"] = game_points[0]
+#                     last_print["game_pointsQ"] = game_points[1]
+#                     file.write(fstring)
+
+
+
+# match_hist = tuple[tuple[list[int], list[set_hist]]]
+# set_hist = tuple[tuple[list[int], list[game_hist]]]
+# game_hist = list[list[int]]
+file.write(
+    f"tot_pts_P,tot_pts_Q,tot_games_P,tot_games_Q,tot_sets_P,tot_sets_Q,tot_run,tot_P_chance\n"
+)
 for chance in args.chances:
     for run in range(1, args.runs + 1):
-        (hist, winner) = predict_match(chance, file, run)
-        if winner:
-            winner = "P"
-        else:
-            winner = "Q"
-        # print(f"{(hist, winner)}")
-        last_print = {}
-        last_print.clear()
-        last_print.setdefault("game_pointsP", -1)
-        last_print.setdefault("game_pointsQ", -1)
-        last_print.setdefault("set_pointsP", -1)
-        last_print.setdefault("set_pointsQ", -1)
-        last_print.setdefault("match_pointsP", -1)
-        last_print.setdefault("match_pointsQ", -1)
-        for (match_points, set_hist) in hist:
-            for (set_points, game_hist) in set_hist:
-                for game_points in game_hist:
-                    if game_points[0] == last_print["game_pointsP"]:
-                        game_points[0] = ""
-                    if game_points[1] == last_print["game_pointsQ"]:
-                        game_points[1] = ""
-                    if set_points[0] == last_print["set_pointsP"]:
-                        set_points[0] = ""
-                    if set_points[1] == last_print["set_pointsQ"]:
-                        set_points[1] = ""
-                    if match_points[0] == last_print["match_pointsP"]:
-                        match_points[0] = ""
-                    if match_points[1] == last_print["match_pointsQ"]:
-                        match_points[1] = ""
-                    fstring = f"{game_points[0]},{game_points[1]},{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
-                    # print(fstring, end="")
-                    last_print["match_pointsP"] = match_points[0]
-                    last_print["match_pointsQ"] = match_points[1]
-                    last_print["set_pointsP"] = set_points[0]
-                    last_print["set_pointsQ"] = set_points[1]
-                    last_print["game_pointsP"] = game_points[0]
-                    last_print["game_pointsQ"] = game_points[1]
-                    file.write(fstring)
+        (match, winner) = predict_match(chance, file, run)
+        match_points = match[-1][0]
+        # print(match_points)
+        set_points = [0, 0]
+        for set in match:
+            if set[1]:
+                set_points[0] += set[1][-1][0][0]
+                set_points[1] += set[1][-1][0][1]
+                game_points = [0, 0]
+                for game in set[1]:
+                    game_points[0] += game[1][-1][0]
+                    game_points[1] += game[1][-1][1]
+        fstring = f"{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
+        # print(fstring, end="")
+        file.write(fstring)
