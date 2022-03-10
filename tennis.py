@@ -140,7 +140,7 @@ def typ(something, depth=0):
 
 
 file = args.out
-file.write(f"Game,Set,Match,Run,P_chance\n")
+file.write(f"game_points_P,game_points_Q,set_points_P,set_points_Q,match_points_P,match_points_Q,run,P_chance\n")
 for chance in args.chances:
     for run in range(1, args.runs + 1):
         (hist, winner) = predict_match(chance, file, run)
@@ -149,9 +149,35 @@ for chance in args.chances:
         else:
             winner = "Q"
         # print(f"{(hist, winner)}")
+        last_print = {}
+        last_print.clear()
+        last_print.setdefault("game_pointsP", -1)
+        last_print.setdefault("game_pointsQ", -1)
+        last_print.setdefault("set_pointsP", -1)
+        last_print.setdefault("set_pointsQ", -1)
+        last_print.setdefault("match_pointsP", -1)
+        last_print.setdefault("match_pointsQ", -1)
         for (match_points, set_hist) in hist:
             for (set_points, game_hist) in set_hist:
                 for game_points in game_hist:
-                    fstring = f"{game_points[0]}-{game_points[1]},{set_points[0]}-{set_points[1]},{match_points[0]}-{match_points[1]},{run},{chance}\n"
+                    if game_points[0] == last_print["game_pointsP"]:
+                        game_points[0] = ""
+                    if game_points[1] == last_print["game_pointsQ"]:
+                        game_points[1] = ""
+                    if set_points[0] == last_print["set_pointsP"]:
+                        set_points[0] = ""
+                    if set_points[1] == last_print["set_pointsQ"]:
+                        set_points[1] = ""
+                    if match_points[0] == last_print["match_pointsP"]:
+                        match_points[0] = ""
+                    if match_points[1] == last_print["match_pointsQ"]:
+                        match_points[1] = ""
+                    fstring = f"{game_points[0]},{game_points[1]},{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
                     # print(fstring, end="")
+                    last_print["match_pointsP"] = match_points[0]
+                    last_print["match_pointsQ"] = match_points[1]
+                    last_print["set_pointsP"] = set_points[0]
+                    last_print["set_pointsQ"] = set_points[1]
+                    last_print["game_pointsP"] = game_points[0]
+                    last_print["game_pointsQ"] = game_points[1]
                     file.write(fstring)
