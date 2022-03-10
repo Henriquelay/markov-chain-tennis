@@ -44,7 +44,7 @@ args = parser.parse_args()
 
 def predict_game(
     P_chance: float, file: TextIO, game_state: list[list[int], list[int], int]
-):
+) -> tuple[list[int], int]:
     # P, Q
     points = [0, 0]
     games_played = 0
@@ -68,13 +68,12 @@ def predict_set(
     file: TextIO,
     game_state: list[list[int], list[int], int],
     tie_break=False,
-):
+) -> tuple[tuple[list[int], list[list[int]]], int]:
     # P, Q
     points = [0, 0]
     game_count = 0
     lead_count = not tie_break
     hist = []
-    hist.append((points.copy(), [[0,0]]))
     while (
         (tie_break and max(points) < 7)
         or (lead_count and (max(points) < 6 or max(points) - min(points) < 2))
@@ -91,17 +90,19 @@ def predict_set(
             # print("Tie breaker!")
             return predict_set(P_chance, file, game_state, tie_break=True)
         (game_hist, winner) = predict_game(P_chance, file, game_state)
+        hist.append((points.copy(), game_hist.copy()))
         points[
             winner
         ] += 1  # TODO Overflow happens, so games aren't unlimited like real games
-        hist.append((points.copy(), game_hist.copy()))
         # print(f"Set winner: {['P', 'Q'][winner]}. Score: {points}")
-    # hist.append((points.copy(), [game_hist[-1]]))
+    hist.append((points.copy(), [game_hist[-1]]))
     return (hist, winner)
 
 
 # Return True if P has won the match, False otherwise
-def predict_match(chances: float, file: TextIO, run: int):
+def predict_match(
+    chances: float, file: TextIO, run: int
+) -> tuple[tuple[list[int], tuple[list[int], list[list[int]]]], bool]:
     # P, Q
     points = [0, 0]
     hist = []
@@ -117,7 +118,8 @@ def predict_match(chances: float, file: TextIO, run: int):
         hist.append((points.copy(), set_hist.copy()))
         points[winner] += 1
         # print(f"Match winner: {['P', 'Q'][winner]}")
-    # hist.append((points.copy(), set_hist.copy()))
+    # print(f"last set: {typ(set_hist)}")
+    hist.append((points.copy(), [set_hist[-1]]))
     return (hist, points[0] == 2)
 
 
@@ -126,10 +128,21 @@ if args.runs < 30:
     args.runs = 30
 
 
+def typ(something, depth=0):
+    if depth > 63:
+        return "..."
+    if type(something) == tuple:
+        return "(" + ", ".join(typ(ding, depth+1) for ding in something) + ")"
+    elif type(something) == list:
+        return "[" + (typ(something[0], depth+1) if something else '(empty)') + "]"
+    else:
+        return str(type(something))
+
+
 file = args.out
 file.write(f"Game;Set;Match;Run;P\n")
 for chance in args.chances:
-    for run in range(1, args.runs+1):
+    for run in range(1, args.runs + 1):
         (hist, winner) = predict_match(chance, file, run)
         if winner:
             winner = "P"
@@ -140,5 +153,5 @@ for chance in args.chances:
             for (set_points, game_hist) in set_hist:
                 for game_points in game_hist:
                     fstring = f"{game_points[0]}-{game_points[1]},{set_points[0]}-{set_points[1]},{match_points[0]}-{match_points[1]},{run},{chance}\n"
-                    # print(fstring, end="")
+                    print(fstring, end="")
                     file.write(fstring)
