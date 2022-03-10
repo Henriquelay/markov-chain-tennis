@@ -48,6 +48,7 @@ def predict_game(
     # P, Q
     points = [0, 0]
     games_played = 0
+    hist = []
     while max(points) <= 3 or max(points) - min(points) < 2:
         games_played += 1
         draw = random.random()  # [0,1)
@@ -55,12 +56,11 @@ def predict_game(
             winner = 0
         else:
             winner = 1
+        hist.append(points.copy())
         points[winner] += 1
-        file.write(
-            f"{points[0]}-{points[1]};{game_state[0][0]}-{game_state[0][1]};{game_state[1][0]}-{game_state[1][1]};{game_state[2][0]}\n"
-        )
         # print(f"Chance: {P_chance}, randomed: {draw}, result {P_chance > draw}, {points}")
-    return winner
+    hist.append(points.copy())
+    return (hist, winner)
 
 
 def predict_set(
@@ -73,6 +73,8 @@ def predict_set(
     points = [0, 0]
     game_count = 0
     lead_count = not tie_break
+    hist = []
+    hist.append((points.copy(), [[0,0]]))
     while (
         (tie_break and max(points) < 7)
         or (lead_count and (max(points) < 6 or max(points) - min(points) < 2))
@@ -88,28 +90,35 @@ def predict_set(
         if not tie_break and points[0] == 6 and points[1] == 6:
             # print("Tie breaker!")
             return predict_set(P_chance, file, game_state, tie_break=True)
-        winner = predict_game(P_chance, file, game_state)
+        (game_hist, winner) = predict_game(P_chance, file, game_state)
         points[
             winner
         ] += 1  # TODO Overflow happens, so games aren't unlimited like real games
+        hist.append((points.copy(), game_hist.copy()))
         # print(f"Set winner: {['P', 'Q'][winner]}. Score: {points}")
-    return winner
+    # hist.append((points.copy(), [game_hist[-1]]))
+    return (hist, winner)
 
 
 # Return True if P has won the match, False otherwise
 def predict_match(chances: float, file: TextIO, run: int):
     # P, Q
     points = [0, 0]
+    hist = []
+    hist.append((points.copy(), []))
     for i in range(0, 2):
-        winner = predict_set(chances, file, [[], points, [run]])
+        (set_hist, winner) = predict_set(chances, file, [[], points, [run]])
+        hist.append((points.copy(), set_hist.copy()))
         points[winner] += 1
         # print(f"Match winner: {['P', 'Q'][winner]}")
     if points[0] == 1:
         # print("Tied matches. Playing roundoff")
-        winner = predict_set(chances, file, [[], points, [run]])
+        (set_hist, winner) = predict_set(chances, file, [[], points, [run]])
+        hist.append((points.copy(), set_hist.copy()))
         points[winner] += 1
         # print(f"Match winner: {['P', 'Q'][winner]}")
-    return points[0] == 2
+    # hist.append((points.copy(), set_hist.copy()))
+    return (hist, points[0] == 2)
 
 
 if args.runs < 30:
@@ -118,12 +127,18 @@ if args.runs < 30:
 
 
 file = args.out
+file.write(f"Game;Set;Match;Run;P\n")
 for chance in args.chances:
-    file.write(f"P={chance}\n")
     for run in range(1, args.runs+1):
-        winner = predict_match(chance, file, run)
+        (hist, winner) = predict_match(chance, file, run)
         if winner:
             winner = "P"
         else:
             winner = "Q"
-        file.write(f"{winner} wins\n")
+        # print(f"{(hist, winner)}")
+        for (match_points, set_hist) in hist:
+            for (set_points, game_hist) in set_hist:
+                for game_points in game_hist:
+                    fstring = f"{game_points[0]}-{game_points[1]},{set_points[0]}-{set_points[1]},{match_points[0]}-{match_points[1]},{run},{chance}\n"
+                    # print(fstring, end="")
+                    file.write(fstring)
