@@ -196,9 +196,9 @@ file.write(
     f"tot_pts_P,tot_pts_Q,tot_games_P,tot_games_Q,tot_sets_P,tot_sets_Q,run,P_chance\n"
 )
 for chance in args.chances:
-    set_points = [0, 0]
-    game_points = [0, 0]
     for run in range(1, args.runs + 1):
+        set_points = [0, 0]
+        game_points = [0, 0]
         (match, winner) = predict_match(chance, file, run)
         match_points = match[-1][0]
         # print(match_points)
