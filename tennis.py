@@ -140,7 +140,7 @@ def typ(something, depth=0):
 
 
 file = args.out
-file.write(f"Game;Set;Match;Run;P\n")
+file.write(f"Game,Set,Match,Run,P_chance\n")
 for chance in args.chances:
     for run in range(1, args.runs + 1):
         (hist, winner) = predict_match(chance, file, run)
@@ -153,5 +153,5 @@ for chance in args.chances:
             for (set_points, game_hist) in set_hist:
                 for game_points in game_hist:
                     fstring = f"{game_points[0]}-{game_points[1]},{set_points[0]}-{set_points[1]},{match_points[0]}-{match_points[1]},{run},{chance}\n"
-                    print(fstring, end="")
+                    # print(fstring, end="")
                     file.write(fstring)
