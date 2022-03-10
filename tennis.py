@@ -193,7 +193,7 @@ file = args.out
 # set_hist = tuple[tuple[list[int], list[game_hist]]]
 # game_hist = list[list[int]]
 file.write(
-    f"tot_pts_P,tot_pts_Q,tot_games_P,tot_games_Q,tot_sets_P,tot_sets_Q,tot_run,tot_P_chance\n"
+    f"tot_pts_P,tot_pts_Q,tot_games_P,tot_games_Q,tot_sets_P,tot_sets_Q,run,P_chance\n"
 )
 for chance in args.chances:
     for run in range(1, args.runs + 1):
