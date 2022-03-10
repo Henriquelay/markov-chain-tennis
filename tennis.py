@@ -209,6 +209,6 @@ for chance in args.chances:
                 for game in set[1]:
                     game_points[0] += game[1][-1][0]
                     game_points[1] += game[1][-1][1]
-        fstring = f"{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
+        fstring = f"{game_points[0]},{game_points[1]},{set_points[0]},{set_points[1]},{match_points[0]},{match_points[1]},{run},{chance}\n"
         # print(fstring, end="")
         file.write(fstring)
