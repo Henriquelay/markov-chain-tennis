@@ -51,6 +51,7 @@ def predict_game(
     # P, Q
     points = [0, 0]
     games_played = 0
+    deuce = False
     hist = []
     while max(points) <= 3 or max(points) - min(points) < 2:
         games_played += 1
@@ -60,13 +61,20 @@ def predict_game(
         else:
             winner = 1
         hist.append(points.copy())
-        points[winner] += 1
+        if not deuce:
+            points[winner] += 1
+            if points[0] == 3 and points[1] == 3:
+                deuce = True
+        else:
+            deuce = False
         # print(f"Chance: {P_chance}, randomed: {draw}, result {P_chance > draw}, {points}")
     hist.append(points.copy())
     return (hist, winner)
 
 
 set_hist = tuple[tuple[list[int], list[game_hist]]]
+
+
 def predict_set(
     P_chance: float,
     file: TextIO,
@@ -186,7 +194,6 @@ file = args.out
 #                     last_print["game_pointsP"] = game_points[0]
 #                     last_print["game_pointsQ"] = game_points[1]
 #                     file.write(fstring)
-
 
 
 # match_hist = tuple[tuple[list[int], list[set_hist]]]
