@@ -51,7 +51,6 @@ def predict_game(
     # P, Q
     points = [0, 0]
     games_played = 0
-    deuce = False
     hist = []
     while max(points) <= 3 or max(points) - min(points) < 2:
         games_played += 1
@@ -61,12 +60,7 @@ def predict_game(
         else:
             winner = 1
         hist.append(points.copy())
-        if not deuce:
-            points[winner] += 1
-            if points[0] == 3 and points[1] == 3:
-                deuce = True
-        else:
-            deuce = False
+        points[winner] += 1
         # print(f"Chance: {P_chance}, randomed: {draw}, result {P_chance > draw}, {points}")
     hist.append(points.copy())
     return (hist, winner)
